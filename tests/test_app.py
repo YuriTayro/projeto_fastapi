@@ -70,14 +70,14 @@ def test_update_user(client):
 def test_delete_user(client):
     # Primeiro, cria um usuário para garantir que o
     # banco de dados não está vazio
-    # client.post(
-    #     '/users/',
-    #     json={
-    #         'username': 'yuri',
-    #         'email': 'teste@teste.com',
-    #         'password': '1234',
-    #     },
-    # )
+    client.post(
+        '/users/',
+        json={
+            'username': 'yuri',
+            'email': 'teste@teste.com',
+            'password': '1234',
+        },
+    )
 
     response = client.delete('/users/1')
     assert response.status_code == HTTPStatus.OK
