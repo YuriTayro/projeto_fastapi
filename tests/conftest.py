@@ -5,6 +5,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
 
 from projeto_fastapi.app import app, database
 
