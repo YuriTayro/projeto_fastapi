@@ -1,7 +1,11 @@
 from http import HTTPStatus
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
+from projeto_fastapi.database import get_session
+from projeto_fastapi.models import User
 from projeto_fastapi.schemas import (
     Message,
     UserDB,
@@ -22,16 +26,34 @@ def read_root():
 
 
 @app.post('/users/', response_model=UserPublic, status_code=HTTPStatus.CREATED)
-def create_user(user: UserSchema):
-    # O '**' vai descompactar o resultado de user.model_dump()
-    # (q é um dicionário),
-    # passando seus pares chave-valor como argumentos
-    # para criar o novo objeto UserDB, adicionando o id
-    user_with_id = UserDB(**user.model_dump(), id=len(database) + 1)
+def create_user(user: UserSchema, session: Session = Depends(get_session)):
+    db_user = session.scalar(
+        select(User).where(
+            (User.username == user.username) | (User.email == user.email)
+        )
+    )
+    if db_user:
+        if db_user.username == user.username:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail='Username already exists',
+            )
+        elif db_user.email == user.email:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail='Email already exists',
+            )
 
-    database.append(user_with_id)
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        password=user.password,
+    )
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
 
-    return user_with_id
+    return db_user
 
 
 @app.get('/users/', response_model=UserList, status_code=HTTPStatus.OK)

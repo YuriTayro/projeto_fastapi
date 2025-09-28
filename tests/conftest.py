@@ -8,25 +8,33 @@ from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import StaticPool, create_engine, event
 from sqlalchemy.orm import Session
 
-from projeto_fastapi.app import app, database
+from projeto_fastapi.app import app
+from projeto_fastapi.database import get_session
 from projeto_fastapi.models import tabela_registry
 
 
 @pytest.fixture
-def client():
-    # Código de setup (antes do yield)
-    yield TestClient(app)  # Fornece o cliente para o teste
-    # Limpa o banco de dados da lista após cada teste
-    database.clear()
+def client(session):
+    def get_session_override():
+        return session
+
+    with TestClient(app) as client:
+        app.dependency_overrides[get_session] = get_session_override
+        yield client  # Fornece o cliente para o teste
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def session():  # essa fixture session q será usada para
     # executar a função de teste no arquivo de test_db.py
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine(
+        'sqlite:///:memory:',
+        connect_args={'check_same_thread': False},
+        poolclass=StaticPool,
+    )
     tabela_registry.metadata.create_all(engine)
 
     with Session(engine) as session:  # O with garante que a
