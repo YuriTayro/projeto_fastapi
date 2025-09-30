@@ -1,4 +1,7 @@
-from pydantic import BaseModel, EmailStr
+# Especifica as condições para a criação de um usuario. 
+# Atua como um contrato, juntamente com o Models.
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class Message(BaseModel):
@@ -12,13 +15,11 @@ class UserSchema(BaseModel):
 
 
 class UserPublic(BaseModel):
+    id: int
     username: str
     email: EmailStr
-
-
-class UserDB(UserSchema):
-    id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserList(BaseModel):
-    user: list[UserPublic]
+    users: list[UserPublic]

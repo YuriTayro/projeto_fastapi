@@ -1,19 +1,15 @@
-# define fixtures que podem ser reutilizadas em
-# diferentes módulos de teste em um projeto
-# Uma fixture é como uma função que prepara dados
-# ou estado necessários para o teste.
-
 from contextlib import contextmanager
 from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import StaticPool, create_engine, event
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
 
 from projeto_fastapi.app import app
 from projeto_fastapi.database import get_session
-from projeto_fastapi.models import tabela_registry
+from projeto_fastapi.models import User, table_registry
 
 
 @pytest.fixture
@@ -23,37 +19,51 @@ def client(session):
 
     with TestClient(app) as client:
         app.dependency_overrides[get_session] = get_session_override
-        yield client  # Fornece o cliente para o teste
+        yield client
+
     app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def session():  # essa fixture session q será usada para
-    # executar a função de teste no arquivo de test_db.py
+def session():
     engine = create_engine(
         'sqlite:///:memory:',
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
     )
-    tabela_registry.metadata.create_all(engine)
+    table_registry.metadata.create_all(engine)
 
-    with Session(engine) as session:  # O with garante que a
-        # sessão será fechada corretamente no final, mesmo que ocorram erros.
-        yield session  # entrega o resultado para a variavel session.
+    with Session(engine) as session:
+        yield session
 
-    tabela_registry.metadata.drop_all(engine)
+    table_registry.metadata.drop_all(engine)
 
 
 @contextmanager
 def _mock_db_time(*, model, time=datetime(2024, 1, 1)):
-    def fake_time_hook(mapper, connection, target):
-        target.created_at = time
+    def fake_time_handler(mapper, connection, target):
+        if hasattr(target, 'created_at'):
+            target.created_at = time
+        if hasattr(target, 'updated_at'):
+            target.updated_at = time
 
-    event.listen(model, 'before_insert', fake_time_hook)
+    event.listen(model, 'before_insert', fake_time_handler)
+
     yield time
-    event.remove(model, 'before_insert', fake_time_hook)
+
+    event.remove(model, 'before_insert', fake_time_handler)
 
 
-@pytest.fixture  # fixture
+@pytest.fixture
 def mock_db_time():
     return _mock_db_time
+
+
+@pytest.fixture
+def user(session):
+    user = User(username='Teste', email='teste@test.com', password='testtest')
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return user

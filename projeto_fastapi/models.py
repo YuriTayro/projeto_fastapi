@@ -1,15 +1,17 @@
-# arquivo para organizar as regras de modelos de tabelas
-# usadas no banco de dados em memoria
+# Esse arquivo é a representação da sua tabela no 
+# banco de dados. O SQLAlchemy usa essa classe (User)
+# para saber como converter objetos Python em 
+# linhas na tabela users e vice-versa.
 
 from datetime import datetime
 
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, registry
 
-tabela_registry = registry()
+table_registry = registry()
 
 
-@tabela_registry.mapped_as_dataclass
+@table_registry.mapped_as_dataclass
 class User:
     __tablename__ = 'users'
 
@@ -19,4 +21,9 @@ class User:
     email: Mapped[str] = mapped_column(unique=True)
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
+    )
+
+    # Exercício
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now(), onupdate=func.now()
     )
