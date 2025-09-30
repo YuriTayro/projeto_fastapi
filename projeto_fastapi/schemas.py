@@ -1,4 +1,4 @@
-# Especifica as condições para a criação de um usuario. 
+# Especifica as condições para a criação de um usuario.
 # Atua como um contrato, juntamente com o Models.
 
 from pydantic import BaseModel, ConfigDict, EmailStr
@@ -23,3 +23,11 @@ class UserPublic(BaseModel):
 
 class UserList(BaseModel):
     users: list[UserPublic]
+
+
+class Token(BaseModel):
+    access_token: str  # token que representa a sessão do usuário
+    # e que contém informações sobre o usuário
+    token_type: str  # é um tipo de autenticação que será incluído
+    # no cabeçalho de autorização de cada solicitação. Em geral,
+    # o token_type para JWT é "bearer".

@@ -1,6 +1,6 @@
-# Esse arquivo é a representação da sua tabela no 
+# Esse arquivo é a representação da sua tabela no
 # banco de dados. O SQLAlchemy usa essa classe (User)
-# para saber como converter objetos Python em 
+# para saber como converter objetos Python em
 # linhas na tabela users e vice-versa.
 
 from datetime import datetime

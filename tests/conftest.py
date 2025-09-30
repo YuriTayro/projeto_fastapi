@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from projeto_fastapi.app import app
 from projeto_fastapi.database import get_session
 from projeto_fastapi.models import User, table_registry
+from projeto_fastapi.security import get_password_hash
 
 
 @pytest.fixture
@@ -37,6 +38,7 @@ def session():
         yield session
 
     table_registry.metadata.drop_all(engine)
+    engine.dispose()
 
 
 @contextmanager
@@ -61,9 +63,25 @@ def mock_db_time():
 
 @pytest.fixture
 def user(session):
-    user = User(username='Teste', email='teste@test.com', password='testtest')
+    password = 'testtest'
+    user = User(
+        username='Teste',
+        email='teste@test.com',
+        password=get_password_hash('testtest'),
+    )
     session.add(user)
     session.commit()
     session.refresh(user)
 
+    user.clean_password = password
+
     return user
+
+
+@pytest.fixture
+def token(client, user):
+    response = client.post(
+        '/token',
+        data={'username': user.username, 'password': user.clean_password},
+    )
+    return response.json()['access_token']
