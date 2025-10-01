@@ -78,19 +78,26 @@ def update_user(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.id != user_id:
+    user_to_update = session.scalar(select(User).where(User.id == user_id))
+
+    if not user_to_update:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='User not found'
+        )
+
+    if current_user.id != user_to_update.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Not enough permissions'
         )
 
     try:
-        current_user.username = user.username
-        current_user.password = get_password_hash(user.password)
-        current_user.email = user.email
+        user_to_update.username = user.username
+        user_to_update.password = get_password_hash(user.password)
+        user_to_update.email = user.email
         session.commit()
-        session.refresh(current_user)
+        session.refresh(user_to_update)
 
-        return current_user
+        return user_to_update
 
     except IntegrityError:
         raise HTTPException(
@@ -105,7 +112,14 @@ def delete_user(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.id != user_id:
+    user_to_delete = session.scalar(select(User).where(User.id == user_id))
+
+    if user_to_delete is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='User not found'
+        )
+
+    if current_user.id != user_to_delete.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Not enough permissions'
         )
