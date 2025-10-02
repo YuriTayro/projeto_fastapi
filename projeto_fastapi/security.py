@@ -12,35 +12,31 @@ from sqlalchemy.orm import Session
 from projeto_fastapi.database import get_session
 from projeto_fastapi.models import User
 
-SECRET_KEY = 'your-secret-key'  # em ambiente de produção
-# deve-se deixá-la em um local não exposto.
+SECRET_KEY = 'your-secret-key'  # Isso é provisório, vamos ajustar!
 ALGORITHM = 'HS256'
-ACESS_TOKEN_EXPIRE_MINUTES = 30
-pwd_context = PasswordHash.recommended()  # Cria um contexto
-# de hash de senhas com o algorítimo recomendado pela pwdlib.
-# Por padrão é argon2.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+pwd_context = PasswordHash.recommended()
 
 
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(tz=ZoneInfo('UTC')) + timedelta(
-        minutes=ACESS_TOKEN_EXPIRE_MINUTES
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    to_encode.update({'exp': expire})  # A chave 'exp' é um
-    # nome padrão ("claim") em JWTs que significa "Expiration Time"
+    to_encode.update({'exp': expire})
     encoded_jwt = encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def get_password_hash(password: str):  # Cria um hash argon2 da senha password
+def get_password_hash(password: str):
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str):  # Verifica se
-    # o valor de plain_password é o mesmo valor de hashed_password
-    # quando aplicado ao contexto do argon2.
+def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 
 def get_current_user(
@@ -59,9 +55,13 @@ def get_current_user(
 
         if not subject_email:
             raise credentials_exception
+
     except DecodeError:
         raise credentials_exception
+
     user = session.scalar(select(User).where(User.email == subject_email))
+
     if not user:
         raise credentials_exception
+
     return user

@@ -38,7 +38,6 @@ def session():
         yield session
 
     table_registry.metadata.drop_all(engine)
-    engine.dispose()
 
 
 @contextmanager
@@ -82,6 +81,6 @@ def user(session):
 def token(client, user):
     response = client.post(
         '/token',
-        data={'username': user.username, 'password': user.clean_password},
+        data={'username': user.email, 'password': user.clean_password},
     )
     return response.json()['access_token']

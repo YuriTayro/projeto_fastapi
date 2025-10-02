@@ -53,7 +53,9 @@ def create_user(user: UserSchema, session: Session = Depends(get_session)):
     hashed_password = get_password_hash(user.password)
 
     db_user = User(
-        username=user.username, password=hashed_password, email=user.email
+        email=user.email,
+        username=user.username,
+        password=hashed_password,
     )
 
     session.add(db_user)
@@ -78,26 +80,18 @@ def update_user(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    user_to_update = session.scalar(select(User).where(User.id == user_id))
-
-    if not user_to_update:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='User not found'
-        )
-
-    if current_user.id != user_to_update.id:
+    if current_user.id != user_id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Not enough permissions'
         )
-
     try:
-        user_to_update.username = user.username
-        user_to_update.password = get_password_hash(user.password)
-        user_to_update.email = user.email
+        current_user.username = user.username
+        current_user.password = get_password_hash(user.password)
+        current_user.email = user.email
         session.commit()
-        session.refresh(user_to_update)
+        session.refresh(current_user)
 
-        return user_to_update
+        return current_user
 
     except IntegrityError:
         raise HTTPException(
@@ -112,14 +106,7 @@ def delete_user(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    user_to_delete = session.scalar(select(User).where(User.id == user_id))
-
-    if user_to_delete is None:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='User not found'
-        )
-
-    if current_user.id != user_to_delete.id:
+    if current_user.id != user_id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail='Not enough permissions'
         )
@@ -130,39 +117,25 @@ def delete_user(
     return {'message': 'User deleted'}
 
 
-@app.get('/users/{user_id}', response_model=UserPublic)
-def read_user__exercicio(
-    user_id: int, session: Session = Depends(get_session)
-):
-    db_user = session.scalar(select(User).where(User.id == user_id))
-
-    if not db_user:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='User not found'
-        )
-
-    return db_user
-
-
 @app.post('/token', response_model=Token)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
-    user = session.scalar(
-        select(User).where(User.username == form_data.username)
-    )
+    user = session.scalar(select(User).where(User.email == form_data.username))
 
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Incorrect username or password',
+            detail='Incorrect email or password',
         )
 
     if not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Incorrect username or password',
+            detail='Incorrect email or password',
         )
+
     access_token = create_access_token(data={'sub': user.email})
+
     return {'access_token': access_token, 'token_type': 'bearer'}
