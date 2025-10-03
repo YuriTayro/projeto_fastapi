@@ -27,7 +27,21 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=UserPublic)
 def create_user(user: UserSchema, session: Session):
-    return db_user
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        password=get_password_hash(user.password),
+    )
+    session.add(db_user)
+    try:
+        session.commit()
+        session.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail='Username or Email already exists',
+        )
 
 
 @router.get('/', response_model=UserList)

@@ -1,7 +1,7 @@
 # Especifica as condições para a criação de um usuario.
 # Atua como um contrato, juntamente com o Models.
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Message(BaseModel):
@@ -31,3 +31,8 @@ class Token(BaseModel):
     token_type: str  # é um tipo de autenticação que será incluído
     # no cabeçalho de autorização de cada solicitação. Em geral,
     # o token_type para JWT é "bearer".
+
+
+class FilterPage(BaseModel):
+    offset: int = Field(0, ge=0)
+    limit: int = Field(100, ge=1)
