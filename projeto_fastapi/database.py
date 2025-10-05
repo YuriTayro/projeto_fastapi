@@ -1,8 +1,4 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from projeto_fastapi.settings import Settings
-
 
 from projeto_fastapi.settings import Settings
 
@@ -17,7 +13,7 @@ engine = create_async_engine(Settings().DATABASE_URL)
 #     with Session(engine) as session:
 #         yield session
 
+
 async def get_session():
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
-
